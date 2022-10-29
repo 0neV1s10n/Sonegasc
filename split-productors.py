@@ -49,7 +49,7 @@ for a in range(1, row + 1):
 
     producteur = sheet_obj.cell(row = a, column = 1).value
     if producteur:
-        if '"**"' in producteur:
+        if '"**"' in str(producteur):
             producteur=(producteur.lstrip('"**"'))
             prod_name.append(producteur)
             prod_pos_row.append(a)
