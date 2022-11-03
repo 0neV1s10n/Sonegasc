@@ -231,6 +231,15 @@ class App(Tk):
             last = ws.calculate_dimension()
             print("Print area for this sheet: ",last)
             ws.print_area = last
+            
+            #Apply thin borders to cell range
+            def set_border(ws, cell_range):
+                thin = Side(border_style="thin", color="000000")
+                for row in ws[cell_range]:
+                    for cell in row:
+                        cell.border = Border(top=thin, left=thin, right=thin, bottom=thin)
+
+            set_border(ws, last)   
 
             #Set gridlines
             #ws.sheet_view.showGridLines = True
