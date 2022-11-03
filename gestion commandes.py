@@ -3,6 +3,47 @@ from tkinter import filedialog
 from tkinter import * 
 from tkinter.ttk import *
 
+from openpyxl.styles import Border, Side
+import itertools
+from operator import concat
+from queue import Empty
+import openpyxl
+from openpyxl import *
+from openpyxl.worksheet.properties import WorksheetProperties, PageSetupProperties
+from openpyxl.styles import Font, Color, colors, PatternFill, Border, Side, Alignment, Protection
+from openpyxl.worksheet.table import Table, TableStyleInfo
+from openpyxl.styles import Border, Side
+from queue import Empty
+from openpyxl.utils import get_column_letter
+
+def set_border(ws, cell_range):
+    rows = ws[cell_range]
+    side = Side(border_style='thin', color="FF000000")
+
+    rows = list(rows)  # we convert iterator to list for simplicity, but it's not memory efficient solution
+    max_y = len(rows) - 1  # index of the last row
+    for pos_y, cells in enumerate(rows):
+        max_x = len(cells) - 1  # index of the last cell
+        for pos_x, cell in enumerate(cells):
+            border = Border(
+                left=cell.border.left,
+                right=cell.border.right,
+                top=cell.border.top,
+                bottom=cell.border.bottom
+            )
+            if pos_x == 0:
+                border.left = side
+            if pos_x == max_x:
+                border.right = side
+            if pos_y == 0:
+                border.top = side
+            if pos_y == max_y:
+                border.bottom = side
+
+            # set new border only if it's one of the edge cells
+            if pos_x == 0 or pos_x == max_x or pos_y == 0 or pos_y == max_y:
+                cell.border = border
+
 class App(Tk):
     def __init__(self):
         super().__init__()
@@ -53,14 +94,7 @@ class App(Tk):
     def gen_prod(self):
         print(self.filename)
 
-        import itertools
-        from operator import concat
-        from queue import Empty
-        import openpyxl
-        from openpyxl import Workbook
-        from openpyxl.worksheet.properties import WorksheetProperties, PageSetupProperties
-        from openpyxl.styles import Font, Color, colors, PatternFill, Border, Side, Alignment, Protection
-        from openpyxl.worksheet.table import Table, TableStyleInfo
+
 
         # create a workbook
         wb = Workbook()
@@ -141,36 +175,30 @@ class App(Tk):
 
             for item in range (prod_pos_row[prod]+1,(prod_pos_row[prod+1])):
 
-                    intitulé = sheet_obj.cell(row = item, column = 1)
-                    description = sheet_obj.cell(row = item, column = 2)
-                    unite = sheet_obj.cell(row = item, column = 3)
-                    prixun = sheet_obj.cell(row = item, column = 4)
-                    montant_total = sheet_obj.cell(row = item, column = sheet_obj.max_column - 1)
-                    quantite_total = sheet_obj.cell(row = item, column = sheet_obj.max_column - 2)
+                montant_total = sheet_obj.cell(row = item, column = sheet_obj.max_column - 1)
+                #print(prod,item,montant_total,montant_total.value)
 
-                    if montant_total.value: 
+                if montant_total.value: 
 
-                        #print (sheet_obj.cell(row = item, column = sheet_obj.max_column - 1).value)
-                        if montant_total.value: 
-                                #print ("intitulé : ",intitulé.value)
-                                #print ("description : ",description.value)
-                                #print ("unite : ",unite.value)
-                                #print ("prix unité : ",prixun.value)
-                                #print ("quantite_total : ",quantite_total.value)
-                                #print ("montant_total : ",montant_total.value)
+                    intitulé = sheet_obj.cell(row = item, column = 1).value
+                    description = sheet_obj.cell(row = item, column = 2).value
+                    unite = sheet_obj.cell(row = item, column = 3).value
+                    prixun = sheet_obj.cell(row = item, column = 4).value
+                    quantite_total = sheet_obj.cell(row = item, column = sheet_obj.max_column - 2).value
+                    montant_total = montant_total.value
 
-                                print(intitulé.value,";",description.value,";",unite.value,";",prixun.value,";",quantite_total.value,";",montant_total.value)
+                    print(intitulé,";",description,";",unite,";",prixun,";",quantite_total,";",montant_total)
 
-                                insert_row=intitulé.value,description.value,unite.value,prixun.value,quantite_total.value,montant_total.value
-                                ws.append(insert_row)
+                    insert_row=intitulé,description,unite,prixun,quantite_total,montant_total
+                    ws.append(insert_row)
 
-                                total = total + float(montant_total.value)
-                                
-                                
-                    if item == (prod_pos_row[prod+1]-1) and total == 0:
-                        print("!!!!!!!!!!!!!!!!!!!!!!!!!",prod_name[prod],item,prod_pos_row[prod])
-                        print("TOTAL: ", total)
-                        sheets_to_remove.append(prod_name[prod])
+                    total = total + round(float(montant_total),2)
+                    #print(prod_name[prod], total)
+                                                              
+                if item == (prod_pos_row[prod+1]-1) and total == 0:
+                    print("!!!!!!!!!!!!!!!!!!!!!!!!!",prod_name[prod],item,prod_pos_row[prod])
+                    print("TOTAL: ", total)
+                    sheets_to_remove.append(prod_name[prod])
 
             ligne_total="TOTAL " + prod_name[prod],"","","","",total
             ws.append(ligne_total)
@@ -180,10 +208,9 @@ class App(Tk):
             ws.merge_cells(start_row=current_row, start_column=1, end_row=current_row, end_column=5)
 
             # Highlight last row / total
-            current_row = str(current_row) + ":" + str(current_row)
             for cell in ws[current_row]:
-                print(cell)
                 cell.font = Font(color="0e1643", bold=True, size=14)
+                cell.fill = PatternFill('solid', fgColor = 'cdc8b1')
 
             # Auto-sizing columns
             for col in ws.columns:
@@ -195,37 +222,38 @@ class App(Tk):
                             max_length = len(str(cell.value))
                     except:
                         pass
-            #    adjusted_width = (max_length + 2) * 1.2
                 adjusted_width = (max_length + 1) * 1.5
                 ws.column_dimensions[column].width = adjusted_width
-                print("Cell width adjusted for : ", cell)
+                #print("Cell width adjusted for : ", cell)
 
-            # Setting print area
-            def convertTuple(tup):
-                str = ''.join(tup)
-                return str
 
+            #Define printing area
             last = ws.calculate_dimension()
-            print(last)
+            print("Print area for this sheet: ",last)
             ws.print_area = last
 
+            #Set gridlines
+            #ws.sheet_view.showGridLines = True
+            #for c in ws[a]:
+            #    c.border = Border(top=NORMAL , bottom = NORMAL , right = NORMAL , left = NORMAL)
+
+            set_border(ws, last)
 
             wsprops = ws.sheet_properties
-            print(wsprops)
             wsprops.tabColor = "1072BA"
             wsprops.pageSetUpPr = PageSetupProperties(fitToPage=True, autoPageBreaks=False)
             wsprops.pageSetUpPr.autoPageBreaks = True    
             wsprops.print_title_rows='1:1'
-            print(wsprops)
+            #print(wsprops)
 
-            ws.sheet_view.showGridLines = True
+            #Set landscape orientation
             ws.page_setup.orientation = ws.ORIENTATION_LANDSCAPE
 
             for cell in ws["1:1"]:
-                print(cell)
+#                print(cell)
                 cell.font = Font(color="0e1643", bold=True, size=14)
-        #       cell.fill = PatternFill(bgColor="00FFFF00", fill_type = "solid")
-
+                cell.fill = (PatternFill('solid', fgColor = 'cdc8b1')
+)
         print ("Feuilles présentes dans le fichier: ", wb.sheetnames)
         print("Feuilles vides à supprimer: ", sheets_to_remove)
         print("Nombre de feuilles vides à supprimer: ", len(sheets_to_remove))
@@ -245,15 +273,6 @@ class App(Tk):
 
 
     def gen_cust(self):
-
-        # import openpyxl module
-        from queue import Empty
-        import openpyxl
-        from openpyxl import Workbook
-        from openpyxl.utils import get_column_letter
-        from openpyxl.worksheet.properties import WorksheetProperties, PageSetupProperties
-        from openpyxl.styles import Font, Color, colors, PatternFill, Border, Side, Alignment, Protection
-        from openpyxl.worksheet.table import Table, TableStyleInfo
 
         # create a workbook
         wb = Workbook()
