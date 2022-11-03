@@ -20,13 +20,19 @@ class App(Tk):
         button4 = ttk.Button(self, text='Afficher le fichier sélectionné', command=self.show)
         button4.grid(row=0, column=1)
 
+        fichier = Text(self, height = 5, width = 52)
+        fichier.grid(row=2, column=(0))
+#        fichier.insert(self.filename)
+        
+#        fichier.insert(App(), self.filename)
+
     def browse_files(self):
         # use instance variable self.filename
         self.filename = filedialog.askopenfilename(initialdir="/",
                                                    title="Select a File",
                                                    filetypes=((".xls", "*.xls"),
                                                               (".xlsx", "*.xlsx")))
-
+                                                              
     def callback(self):
         if askyesno('Titre 1', 'Êtes-vous sûr de vouloir faire ça?'):
             showwarning('Titre 2', 'Tant pis...')

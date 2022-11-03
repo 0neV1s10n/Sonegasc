@@ -4,13 +4,14 @@
 from queue import Empty
 import openpyxl
 from openpyxl import Workbook
+from openpyxl.utils import get_column_letter
 
 # create a workbook
 wb = Workbook()
 #ws = wb.active
 
 # Give the location of the file
-path = "/Users/lqa/Downloads/Commande 15 octobre 2022(2).xlsx"
+path = "/Users/lavdimqaushi/Downloads/Commande 29 octobre 2022.xlsx"
 
 # To open the workbook
 # workbook object is created
@@ -62,6 +63,8 @@ for a in range(1, row + 1):
 
 # Loop through file to list ordered items per family
 for fam in range (0,len(family)):
+    total = 0
+
     print("*** Famille: ", family[fam]," ***")
     print("*** Colonne nr: ", family_pos_col[fam]," ***")
     wb.create_sheet(family[fam])
@@ -69,19 +72,28 @@ for fam in range (0,len(family)):
 
     ws = wb[family[fam]]
 
-    ws['A1'] = 'intitulé'
-    ws['B1'] = 'description'
-    ws['C1'] = 'unite'
-    ws['D1'] = 'prix unitaire'
-    ws['E1'] = 'quantité'
-    ws['F1'] = 'total'
+    ws['A1'] = 'INTITULE'
+    ws['B1'] = 'DESCRIPTION'
+    ws['C1'] = 'UNITE'
+    ws['D1'] = 'PRIX UNITAIRE'
+    ws['E1'] = 'QUANTITE'
+    ws['F1'] = 'TOTAL'
         
     for prod in range (0,len(prod_name)-1):
-
+        
         print ("Nom du producteur: ",prod_name[prod])
         print ("Première ligne du producteur: ",prod_pos_row[prod]+1)
         print ("Première ligne du producteur suivant: ",prod_pos_row[prod+1])
 
+        ws.append((prod_name[prod],""))
+
+        #Defining printing area
+        ws_row = sheet_obj.max_row
+        ws_column = sheet_obj.max_column
+
+        last_cell=(get_column_letter(ws_column))
+        print("A1:",last_cell,ws_column)
+        ws.print_area = "A1:",(last_cell)
 
         for item in range (prod_pos_row[prod]+1,(prod_pos_row[prod+1])):
 
@@ -94,6 +106,7 @@ for fam in range (0,len(family)):
             if quantite_total and float(quantite_total) > 0:
 
                 montant_total = float(quantite_total) * float(prixun)
+                montant_total=round(montant_total,2)
 
                 print("\nITEM Ligne: ",item)
                 print("ITEM Colonne: ",family_pos_col[fam])
@@ -104,17 +117,27 @@ for fam in range (0,len(family)):
 
                 print(intitulé,";",description,";",unite,";",prixun,";",quantite_total,";",montant_total)
 
-
                 insert_row=intitulé,description,unite,prixun,quantite_total,montant_total
                 ws.append(insert_row)
-                    
-wb.save('/Users/lqa/Downloads/familles.xlsx')
+
+                total = total + montant_total
+                
+                # Auto-sizing columns
+                for col in ws.columns:
+                    max_length = 0
+                    column = col[0].column_letter # Get the column name
+                    for cell in col:
+                        try: # Necessary to avoid error on empty cells
+                            if len(str(cell.value)) > max_length:
+                                max_length = len(str(cell.value))
+                        except:
+                            pass
+                    adjusted_width = (max_length + 2) * 1.2
+                    ws.column_dimensions[column].width = adjusted_width
+                
 
 
+    ligne_total="TOTAL",family[fam],"IBAN","BE33000441432246","",total
+    ws.append(ligne_total)
 
-
-
-
-
-
-
+wb.save('/Users/lavdimqaushi/Downloads/familles.xlsx')
