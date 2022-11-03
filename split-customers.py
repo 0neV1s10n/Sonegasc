@@ -11,7 +11,7 @@ wb = Workbook()
 #ws = wb.active
 
 # Give the location of the file
-path = "/Users/lavdimqaushi/Downloads/Commande 29 octobre 2022.xlsx"
+path = "/Users/lqa/Downloads/Commande 29 octobre 2022.xlsx"
 
 # To open the workbook
 # workbook object is created
@@ -140,4 +140,4 @@ for fam in range (0,len(family)):
     ligne_total="TOTAL",family[fam],"IBAN","BE33000441432246","",total
     ws.append(ligne_total)
 
-wb.save('/Users/lavdimqaushi/Downloads/familles.xlsx')
+wb.save('/Users/lqa/Downloads/familles.xlsx')

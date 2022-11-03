@@ -15,7 +15,7 @@ wb = Workbook()
 #ws = wb.active
 
 # Give the location of the file
-path = "/Users/lavdimqaushi/Downloads/Commande 15 octobre 2022(2).xlsx"
+path = "/Users/lqa/Downloads/Commande 29 octobre 2022.xlsx"
 
 # To open the workbook
 # workbook object is created
@@ -182,4 +182,4 @@ for rem in range(0,len(sheets_to_remove)):
     print(rem, sheets_to_remove[rem])
     wb.remove(wb[sheets_to_remove[rem]])
 
-wb.save('/Users/lavdimqaushi/Downloads/producteurs.xlsx')
+wb.save('/Users/lqa/Downloads/producteurs.xlsx')
