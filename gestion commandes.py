@@ -3,10 +3,7 @@ from tkinter import filedialog
 from tkinter import * 
 from tkinter.ttk import *
 
-from openpyxl.styles import Border, Side
-import itertools
-from operator import concat
-from queue import Empty
+
 import openpyxl
 from openpyxl import *
 from openpyxl.worksheet.properties import WorksheetProperties, PageSetupProperties
@@ -15,6 +12,11 @@ from openpyxl.worksheet.table import Table, TableStyleInfo
 from openpyxl.styles import Border, Side
 from queue import Empty
 from openpyxl.utils import get_column_letter
+import itertools
+from operator import concat
+from queue import Empty
+from openpyxl.utils import rows_from_range
+from copy import copy
 
 def set_border(ws, cell_range):
     rows = ws[cell_range]
@@ -101,6 +103,7 @@ class App(Tk):
         #ws = wb.active
 
         # Give the location of the file
+        #path = "/Users/lavdimqaushi/Downloads/Commande 29 octobre 2022.xlsx"
         path = self.filename
 
         # To open the workbook
@@ -115,10 +118,9 @@ class App(Tk):
         # and column
         row = sheet_obj.max_row
         column = sheet_obj.max_column
-        
+
         print("Total Rows:", row)
         print("Total Columns:", column)
-
 
         print("\nValue of first row - FAMILY NAME")
         for i in range(1, column + 1): 
@@ -134,6 +136,8 @@ class App(Tk):
         prod_name = []
         prod_pos_row =[]
         sheets_to_remove = []
+        position = 0
+
 
 
         # loop through rows and detect productors and position in file
@@ -153,11 +157,28 @@ class App(Tk):
         # Print headers / columns titles
         #print("intitulé;description;unite;prix unité;quantite_total;montant_total")
 
+        #One sheet for all productors
+        wb.create_sheet("Commandes globales")
+        wsglob = wb["Commandes globales"]
+
+        #Define copy range function
+        def copy_range(range_str, src, dst):
+
+            for row in rows_from_range(range_str):
+                for cell in row:
+                    dst[cell].value = src[cell].value
+                    dst[cell].border = src[cell].border
+
+            return
+
+        total_item_array = [0]
 
         # Loop through file to list ordered items per productor
         for prod in range (0,len(prod_name)-1):
 
             total = 0
+            total_item = 0
+
         #    print("Producteur ",prod,"/",len(prod_name))
             print("*** Producteur: ", prod_name[prod]," ***")
             wb.create_sheet(prod_name[prod])
@@ -166,12 +187,14 @@ class App(Tk):
 
 
             ws = wb[prod_name[prod]]
-            ws['A1'] = 'INTITULE'
-            ws['B1'] = 'DESCRIPTION'
-            ws['C1'] = 'UNITE'
-            ws['D1'] = 'PRIX UNITAIRE'
-            ws['E1'] = 'QUANTITE'
-            ws['F1'] = 'TOTAL'
+            ws['A1'] = prod_name[prod]
+            ws['B1'] = 'Description'
+            ws['C1'] = 'Unité'
+            ws['D1'] = 'Prix unitaire'
+            ws['E1'] = 'Quantité'
+            ws['F1'] = 'Total'
+
+            total_item = 0    
 
             for item in range (prod_pos_row[prod]+1,(prod_pos_row[prod+1])):
 
@@ -185,7 +208,7 @@ class App(Tk):
                     unite = sheet_obj.cell(row = item, column = 3).value
                     prixun = sheet_obj.cell(row = item, column = 4).value
                     quantite_total = sheet_obj.cell(row = item, column = sheet_obj.max_column - 2).value
-                    montant_total = montant_total.value
+                    montant_total = round(float(montant_total.value),2)
 
                     print(intitulé,";",description,";",unite,";",prixun,";",quantite_total,";",montant_total)
 
@@ -193,12 +216,21 @@ class App(Tk):
                     ws.append(insert_row)
 
                     total = total + round(float(montant_total),2)
+
                     #print(prod_name[prod], total)
-                                                              
+
+                    if montant_total != 0:
+                        total_item = total_item + 1
+                
+                # Check at the last row of a given productor if the total is 0. If so, this productor will not be displayed in report                                                        
                 if item == (prod_pos_row[prod+1]-1) and total == 0:
                     print("!!!!!!!!!!!!!!!!!!!!!!!!!",prod_name[prod],item,prod_pos_row[prod])
                     print("TOTAL: ", total)
                     sheets_to_remove.append(prod_name[prod])
+
+
+
+            total_item_array.append(total_item)
 
             ligne_total="TOTAL " + prod_name[prod],"","","","",total
             ws.append(ligne_total)
@@ -211,6 +243,70 @@ class App(Tk):
             for cell in ws[current_row]:
                 cell.font = Font(color="0e1643", bold=True, size=14)
                 cell.fill = PatternFill('solid', fgColor = 'cdc8b1')
+            
+
+
+
+
+
+
+            #Define printing area
+            last = ws.calculate_dimension()
+            print("Print area for this sheet: ",last)
+            ws.print_area = last
+
+
+            def set_border(ws, cell_range):
+                thin = Side(border_style="thin", color="000000")
+                for row in ws[cell_range]:
+                    for cell in row:
+                        cell.border = Border(top=thin, left=thin, right=thin, bottom=thin)
+
+            set_border(ws, last)
+
+
+
+            wsprops = ws.sheet_properties
+            wsprops.tabColor = "1072BA"
+            wsprops.pageSetUpPr = PageSetupProperties(fitToPage=True, autoPageBreaks=False)
+            #wsprops.pageSetUpPr.autoPageBreaks = True    
+            wsprops.print_title_rows='1:1'
+            #print(wsprops)
+
+            #Set landscape orientation
+            ws.page_setup.orientation = ws.ORIENTATION_LANDSCAPE
+
+            for cell in ws["1:1"]:
+        #                print(cell)
+                cell.font = Font(color="0e1643", bold=True, size=14)
+                cell.fill = (PatternFill('solid', fgColor = 'cdc8b1'))
+
+            # Copy current productor in global worksheet / still needs to be positioned after previous productor (iteration)
+            #copy_range(last,ws,wsglob)
+
+            if prod == 0:
+                position = 0
+            else:
+                position = position + total_item_array[prod] + 5
+
+            if total_item != 0:
+
+                for row in ws.rows:
+                    for cell in row:
+                        new_cell = wsglob.cell(row=cell.row + position, column=cell.column,
+                                value= cell.value)
+                        if cell.has_style:
+                            new_cell.font = copy(cell.font)
+                            new_cell.border = copy(cell.border)
+                            new_cell.fill = copy(cell.fill)
+                            new_cell.number_format = copy(cell.number_format)
+                            new_cell.protection = copy(cell.protection)
+                            new_cell.alignment = copy(cell.alignment)
+
+                wsprops = wsglob.sheet_properties
+                wsprops.tabColor = "93c47d"
+                wsprops.pageSetUpPr = PageSetupProperties(fitToPage=True, autoPageBreaks=False)
+                wsprops.outlinePr.applyStyles = True
 
             # Auto-sizing columns
             for col in ws.columns:
@@ -226,43 +322,19 @@ class App(Tk):
                 ws.column_dimensions[column].width = adjusted_width
                 #print("Cell width adjusted for : ", cell)
 
+        for col in wsglob.columns:
+            max_length = 0
+            column = col[0].column_letter # Get the column name
+            for cell in col:
+                try: # Necessary to avoid error on empty cells
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
+                except:
+                    pass
+            adjusted_width = (max_length + 1) * 1.5
+            wsglob.column_dimensions[column].width = adjusted_width
+            #print("Cell width adjusted for : ", cell)
 
-            #Define printing area
-            last = ws.calculate_dimension()
-            print("Print area for this sheet: ",last)
-            ws.print_area = last
-            
-            #Apply thin borders to cell range
-            def set_border(ws, cell_range):
-                thin = Side(border_style="thin", color="000000")
-                for row in ws[cell_range]:
-                    for cell in row:
-                        cell.border = Border(top=thin, left=thin, right=thin, bottom=thin)
-
-            set_border(ws, last)   
-
-            #Set gridlines
-            #ws.sheet_view.showGridLines = True
-            #for c in ws[a]:
-            #    c.border = Border(top=NORMAL , bottom = NORMAL , right = NORMAL , left = NORMAL)
-
-            set_border(ws, last)
-
-            wsprops = ws.sheet_properties
-            wsprops.tabColor = "1072BA"
-            wsprops.pageSetUpPr = PageSetupProperties(fitToPage=True, autoPageBreaks=False)
-            wsprops.pageSetUpPr.autoPageBreaks = True    
-            wsprops.print_title_rows='1:1'
-            #print(wsprops)
-
-            #Set landscape orientation
-            ws.page_setup.orientation = ws.ORIENTATION_LANDSCAPE
-
-            for cell in ws["1:1"]:
-#                print(cell)
-                cell.font = Font(color="0e1643", bold=True, size=14)
-                cell.fill = (PatternFill('solid', fgColor = 'cdc8b1')
-)
         print ("Feuilles présentes dans le fichier: ", wb.sheetnames)
         print("Feuilles vides à supprimer: ", sheets_to_remove)
         print("Nombre de feuilles vides à supprimer: ", len(sheets_to_remove))
@@ -270,9 +342,14 @@ class App(Tk):
         for rem in range(0,len(sheets_to_remove)):
             print(rem, sheets_to_remove[rem])
             wb.remove(wb[sheets_to_remove[rem]])
-                            
-        output_filename =(self.filename.replace(".xls", "-par producteur.xls"))
+
+
+        output_filename =(path.replace(".xls", "-par producteur.xls"))
         wb.save(output_filename)
+
+        print ("Nombre de produits commandés par producteur")
+        for prod in range (0,len(prod_name)-1):
+            print(prod_name[prod]," : ",total_item_array[prod+1])
 
 
 
