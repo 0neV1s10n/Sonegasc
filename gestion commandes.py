@@ -365,7 +365,8 @@ class App(Tk):
         #ws = wb.active
 
         # Give the location of the file
-        path = self.filename
+        #path = self.filename
+        path = "/Users/lavdimqaushi/Downloads/Commande 29 octobre 2022.xlsx"
 
         # To open the workbook
         # workbook object is created
@@ -379,7 +380,7 @@ class App(Tk):
         # and column
         row = sheet_obj.max_row
         column = sheet_obj.max_column
-        
+
         print("Total Rows:", row)
         print("Total Columns:", column)
 
@@ -393,7 +394,7 @@ class App(Tk):
             cell_obj = sheet_obj.cell(row = 5, column = i) 
             orders = sheet_obj.cell(row = row, column = i) 
             if cell_obj.value and orders.value != 0:
-                print(cell_obj.value, end = " ")
+                print(cell_obj.value)
                 family.append(cell_obj.value)
                 family_pos_col.append(i)    
 
@@ -403,6 +404,15 @@ class App(Tk):
         # initialize prod_name and prod_pos_row arrays
         prod_name = []
         prod_pos_row =[]
+        sheets_to_remove = []
+        position = 0
+        total_item = 0
+
+        wb.create_sheet("Commandes globales")
+        wsglob = wb["Commandes globales"]
+
+        total_item_array = [0]
+
 
         # loop through rows and detect productors and position in file
         for a in range(1, row + 1):
@@ -418,6 +428,7 @@ class App(Tk):
         # Loop through file to list ordered items per family
         for fam in range (0,len(family)):
             total = 0
+            total_item = 0
 
             print("*** Famille: ", family[fam]," ***")
             print("*** Colonne nr: ", family_pos_col[fam]," ***")
@@ -426,7 +437,7 @@ class App(Tk):
 
             ws = wb[family[fam]]
 
-            ws['A1'] = 'INTITULE'
+            ws['A1'] = family[fam]
             ws['B1'] = 'DESCRIPTION'
             ws['C1'] = 'UNITE'
             ws['D1'] = 'PRIX UNITAIRE'
@@ -440,14 +451,19 @@ class App(Tk):
                 print ("Première ligne du producteur suivant: ",prod_pos_row[prod+1])
 
                 ws.append((prod_name[prod],""))
+                total_item = total_item + 1
 
-                #Defining printing area
-                ws_row = sheet_obj.max_row
-                ws_column = sheet_obj.max_column
 
-                last_cell=(get_column_letter(ws_column))
-                print("A1:",last_cell,ws_column)
-                ws.print_area = "A1:",(last_cell)
+                current_row = ws.max_row
+
+                print("Ligne actuelle: ", prod_name[prod], current_row)
+
+                # Highlight productor row
+                for cell in ws[current_row]:
+                    cell.font = Font(color="0e1643", bold=True, size=12)
+                    cell.fill = PatternFill('solid', fgColor = 'd0e0e3')
+
+                total_prod = 0
 
                 for item in range (prod_pos_row[prod]+1,(prod_pos_row[prod+1])):
 
@@ -456,18 +472,19 @@ class App(Tk):
                     unite = sheet_obj.cell(row = item, column = 3).value
                     prixun = sheet_obj.cell(row = item, column = 4).value
                     quantite_total = sheet_obj.cell(row = item, column = family_pos_col[fam]).value
+
                     
                     if quantite_total and float(quantite_total) > 0:
 
                         montant_total = float(quantite_total) * float(prixun)
                         montant_total=round(montant_total,2)
 
-                        print("\nITEM Ligne: ",item)
-                        print("ITEM Colonne: ",family_pos_col[fam])
-                        print("ITEM Famille: ",family[fam])
-                        print("ITEM quantite_total: ",quantite_total)
-                        print("ITEM prix unitaire: ",prixun)
-                        print("montant_total: ",montant_total)
+                        #print("\nITEM Ligne: ",item)
+                        #print("ITEM Colonne: ",family_pos_col[fam])
+                        #print("ITEM Famille: ",family[fam])
+                        #print("ITEM quantite_total: ",quantite_total)
+                        #print("ITEM prix unitaire: ",prixun)
+                        #print("montant_total: ",montant_total)
 
                         print(intitulé,";",description,";",unite,";",prixun,";",quantite_total,";",montant_total)
 
@@ -475,28 +492,126 @@ class App(Tk):
                         ws.append(insert_row)
 
                         total = total + montant_total
-                        
-                        # Auto-sizing columns
-                        for col in ws.columns:
-                            max_length = 0
-                            column = col[0].column_letter # Get the column name
-                            for cell in col:
-                                try: # Necessary to avoid error on empty cells
-                                    if len(str(cell.value)) > max_length:
-                                        max_length = len(str(cell.value))
-                                except:
-                                    pass
-                            adjusted_width = (max_length + 2) * 1.2
-                            ws.column_dimensions[column].width = adjusted_width
-                        
+                        total_prod = total_prod + montant_total
+
+                        if montant_total != 0:
+                            total_item = total_item + 1
+
+                print(prod_name[prod], total_prod, current_row)
+                if total_prod == 0:
+                    print("ligne supprimée: ",current_row)
+                    ws.delete_rows(current_row)
+                    total_item = total_item - 1
+
 
 
             ligne_total="TOTAL",family[fam],"IBAN","BE33000441432246","",total
             ws.append(ligne_total)
 
-        output_filename =(self.filename.replace(".xls", "-par famille.xls"))
-        wb.save(output_filename)
+            total_item_array.append(total_item)
 
+            current_row = ws.max_row
+
+            # Highlight last row / total
+            for cell in ws[current_row]:
+                cell.font = Font(color="0e1643", bold=True, size=14)
+                cell.fill = PatternFill('solid', fgColor = 'cdc8b1')
+            
+
+            #Define printing area
+            last = ws.calculate_dimension()
+            print("Print area for this sheet: ",last)
+            ws.print_area = last
+
+
+            def set_border(ws, cell_range):
+                thin = Side(border_style="thin", color="000000")
+                for row in ws[cell_range]:
+                    for cell in row:
+                        cell.border = Border(top=thin, left=thin, right=thin, bottom=thin)
+
+            set_border(ws, last)
+
+
+
+            wsprops = ws.sheet_properties
+            wsprops.tabColor = "1072BA"
+            wsprops.pageSetUpPr = PageSetupProperties(fitToPage=True, autoPageBreaks=False)
+            #wsprops.pageSetUpPr.autoPageBreaks = True    
+            wsprops.print_title_rows='1:1'
+            #print(wsprops)
+
+            #Set landscape orientation
+            ws.page_setup.orientation = ws.ORIENTATION_LANDSCAPE
+
+            for cell in ws["1:1"]:
+        #                print(cell)
+                cell.font = Font(color="0e1643", bold=True, size=14)
+                cell.fill = (PatternFill('solid', fgColor = 'cdc8b1'))
+
+            # Copy current productor in global worksheet / still needs to be positioned after previous productor (iteration)
+            #copy_range(last,ws,wsglob)
+
+
+            print("position: ",position)
+            print("fam: ",fam)
+            print("total_item_array[fam]: ",total_item_array[fam])
+
+            if fam == 0:
+                position = 0
+            else:
+                position = position + total_item_array[fam] + 5
+
+            if total_item != 0:
+
+                for row in ws.rows:
+                    for cell in row:
+                        new_cell = wsglob.cell(row=cell.row + position, column=cell.column,
+                                value= cell.value)
+                        if cell.has_style:
+                            new_cell.font = copy(cell.font)
+                            new_cell.border = copy(cell.border)
+                            new_cell.fill = copy(cell.fill)
+                            new_cell.number_format = copy(cell.number_format)
+                            new_cell.protection = copy(cell.protection)
+                            new_cell.alignment = copy(cell.alignment)
+
+                wsprops = wsglob.sheet_properties
+                wsprops.tabColor = "93c47d"
+                wsprops.pageSetUpPr = PageSetupProperties(fitToPage=True, autoPageBreaks=False)
+                wsprops.outlinePr.applyStyles = True
+
+
+
+            # Auto-sizing columns
+            for col in ws.columns:
+                max_length = 0
+                column = col[0].column_letter # Get the column name
+                for cell in col:
+                    try: # Necessary to avoid error on empty cells
+                        if len(str(cell.value)) > max_length:
+                            max_length = len(str(cell.value))
+                    except:
+                        pass
+                adjusted_width = (max_length + 1) * 1.5
+                ws.column_dimensions[column].width = adjusted_width
+                #print("Cell width adjusted for : ", cell)
+
+        for col in wsglob.columns:
+            max_length = 0
+            column = col[0].column_letter # Get the column name
+            for cell in col:
+                try: # Necessary to avoid error on empty cells
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
+                except:
+                    pass
+            adjusted_width = (max_length + 1) * 1.5
+            wsglob.column_dimensions[column].width = adjusted_width
+            #print("Cell width adjusted for : ", cell)
+
+        output_filename =(path.replace(".xls", "-par famille.xls"))
+        wb.save(output_filename)
 
 
 
