@@ -103,7 +103,6 @@ class App(Tk):
         #ws = wb.active
 
         # Give the location of the file
-        #path = "/Users/lavdimqaushi/Downloads/Commande 29 octobre 2022.xlsx"
         path = self.filename
 
         # To open the workbook
@@ -365,8 +364,7 @@ class App(Tk):
         #ws = wb.active
 
         # Give the location of the file
-        #path = self.filename
-        path = "/Users/lavdimqaushi/Downloads/Commande 29 octobre 2022.xlsx"
+        path = self.filename
 
         # To open the workbook
         # workbook object is created
