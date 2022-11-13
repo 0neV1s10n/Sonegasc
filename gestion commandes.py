@@ -18,6 +18,9 @@ from queue import Empty
 from openpyxl.utils import rows_from_range
 from copy import copy
 
+
+
+# Define set_border function
 def set_border(ws, cell_range):
     rows = ws[cell_range]
     side = Side(border_style='thin', color="FF000000")
@@ -49,33 +52,34 @@ def set_border(ws, cell_range):
 class App(Tk):
     def __init__(self):
         super().__init__()
-        self.filename = None
 
         button1 = ttk.Button(self, text='Sélectioner un fichier de commande', command=self.browse_files)
         button1.grid(row=0, column=0)
 
         button2 = ttk.Button(self, text='Générer le fichier producteurs', command=self.gen_prod)
-        button2.grid(row=1, column=0)
+        button2.grid(row=4, column=0)
 
         button3 = ttk.Button(self, text='Générer le fichier clients', command=self.gen_cust)
-        button3.grid(row=1, column=1)
+        button3.grid(row=4, column=1)
 
         button4 = ttk.Button(self, text='Afficher le fichier sélectionné', command=self.show)
         button4.grid(row=0, column=1)
 
-        fichier = Text(self, height = 5, width = 52)
-        fichier.grid(row=2, column=(0))
-#        fichier.insert(self.filename)
-        
-#        fichier.insert(App(), self.filename)
+        self.filepath_label = ttk.Label(self, text="Fichier actuellement sélectionné:")
+        self.filepath_label.grid(row=2, columnspan=2)     
 
+        self.filepath = ttk.Label(self, foreground='green')
+        self.filepath.grid(row=3, columnspan=2)        
+        
     def browse_files(self):
         # use instance variable self.filename
         self.filename = filedialog.askopenfilename(initialdir="/",
-                                                   title="Select a File",
-                                                   filetypes=((".xls", "*.xls"),
-                                                              (".xlsx", "*.xlsx")))
-                                                              
+                                                title="Select a File",
+                                                filetypes=((".xls", "*.xls"),
+                                                            (".xlsx", "*.xlsx")))
+        self.filepath.config(text=self.filename)
+
+
     def callback(self):
         if askyesno('Titre 1', 'Êtes-vous sûr de vouloir faire ça?'):
             showwarning('Titre 2', 'Tant pis...')
@@ -87,7 +91,6 @@ class App(Tk):
         print(self.filename)
 
 
-
 ################################
 #### SPLIT PER PRODUCTOR #######
 ################################
@@ -95,8 +98,6 @@ class App(Tk):
 
     def gen_prod(self):
         print(self.filename)
-
-
 
         # create a workbook
         wb = Workbook()
