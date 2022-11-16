@@ -243,11 +243,6 @@ class App(Tk):
             for cell in ws[current_row]:
                 cell.font = Font(color="0e1643", bold=True, size=14)
                 cell.fill = PatternFill('solid', fgColor = 'cdc8b1')
-            
-
-
-
-
 
 
             #Define printing area
@@ -263,7 +258,6 @@ class App(Tk):
                         cell.border = Border(top=thin, left=thin, right=thin, bottom=thin)
 
             set_border(ws, last)
-
 
 
             wsprops = ws.sheet_properties
@@ -377,8 +371,13 @@ class App(Tk):
 
         # Getting the value of maximum rows
         # and column
-        row = sheet_obj.max_row
+        #row = sheet_obj.max_row
         column = sheet_obj.max_column
+
+        for row in range(1, sheet_obj.max_row +1):
+            if 'BE33000441432246' in str(sheet_obj.cell(row, 1).value):
+                last_row = row
+                print("Last row is: ", last_row)
 
         print("Total Rows:", row)
         print("Total Columns:", column)
@@ -390,10 +389,12 @@ class App(Tk):
 
         print("\n - FAMILIES with orders")
         for i in range(1, column + 1): 
-            cell_obj = sheet_obj.cell(row = 5, column = i) 
-            orders = sheet_obj.cell(row = row, column = i) 
+            cell_obj = sheet_obj.cell(row = 5, column = i)
+            print(cell_obj, cell_obj.value)
+            orders = sheet_obj.cell(row = last_row, column = i)
+            print(orders, orders.value)
             if cell_obj.value and orders.value != 0:
-                print(cell_obj.value)
+                print("Cell object value >< 0: ",cell_obj.value)
                 family.append(cell_obj.value)
                 family_pos_col.append(i)    
 
@@ -432,6 +433,8 @@ class App(Tk):
             print("*** Famille: ", family[fam]," ***")
             print("*** Colonne nr: ", family_pos_col[fam]," ***")
             wb.create_sheet(family[fam])
+
+            #Remove default unused excel sheet
             if fam == 1: del wb['Sheet']
 
             ws = wb[family[fam]]
@@ -445,9 +448,10 @@ class App(Tk):
                 
             for prod in range (0,len(prod_name)-1):
                 
-                print ("Nom du producteur: ",prod_name[prod])
-                print ("Première ligne du producteur: ",prod_pos_row[prod]+1)
-                print ("Première ligne du producteur suivant: ",prod_pos_row[prod+1])
+                #Debugging lines
+                #print ("Nom du producteur: ",prod_name[prod])
+                #print ("Première ligne du producteur: ",prod_pos_row[prod]+1)
+                #print ("Première ligne du producteur suivant: ",prod_pos_row[prod+1])
 
                 ws.append((prod_name[prod],""))
                 total_item = total_item + 1
@@ -496,7 +500,7 @@ class App(Tk):
                         if montant_total != 0:
                             total_item = total_item + 1
 
-                print(prod_name[prod], total_prod, current_row)
+                print("Nom du producteur: ",prod_name[prod], "Total prod: ", total_prod, "Current row: ", current_row, "Total item: ",total_item)
                 if total_prod == 0:
                     print("ligne supprimée: ",current_row)
                     ws.delete_rows(current_row)
@@ -530,7 +534,6 @@ class App(Tk):
                         cell.border = Border(top=thin, left=thin, right=thin, bottom=thin)
 
             set_border(ws, last)
-
 
 
             wsprops = ws.sheet_properties
@@ -608,6 +611,8 @@ class App(Tk):
             adjusted_width = (max_length + 1) * 1.5
             wsglob.column_dimensions[column].width = adjusted_width
             #print("Cell width adjusted for : ", cell)
+
+        print(total_item_array)
 
         output_filename =(path.replace(".xls", "-par famille.xls"))
         wb.save(output_filename)
