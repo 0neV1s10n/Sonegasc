@@ -2,7 +2,12 @@ from tkinter import Tk, ttk
 from tkinter import filedialog
 from tkinter import * 
 from tkinter.ttk import *
+from tkinter import messagebox
 
+import sys
+from tkinter.scrolledtext import ScrolledText
+
+from tkinter.messagebox import showerror
 
 import openpyxl
 from openpyxl import *
@@ -49,11 +54,28 @@ def set_border(ws, cell_range):
             if pos_x == 0 or pos_x == max_x or pos_y == 0 or pos_y == max_y:
                 cell.border = border
 
+
+class PrintLogger(object):  # create file like object
+
+    def __init__(self, textbox):  # pass reference to text widget
+        self.textbox = textbox  # keep ref
+
+    def write(self, text):
+        self.textbox.configure(state="normal")  # make field editable
+        self.textbox.insert("end", text)  # write text to textbox
+        self.textbox.see("end")  # scroll to end
+        self.textbox.configure(state="disabled")  # make field readonly
+
+    def flush(self):  # needed for file like object
+        pass
+
+
 class App(Tk):
     def __init__(self):
         super().__init__()
 
-        button1 = ttk.Button(self, text='Sélectioner un fichier de commande', command=self.browse_files)
+        #button1 = ttk.Button(self, text='Sélectioner un fichier de commande', command=self.browse_files)
+        button1 = ttk.Button(self, text='Sélectioner un fichier de commande', command=lambda: [self.browse_files(), self.redirect_logging()])
         button1.grid(row=0, column=0)
 
         button2 = ttk.Button(self, text='Générer le fichier producteurs', command=self.gen_prod)
@@ -69,7 +91,23 @@ class App(Tk):
         self.filepath_label.grid(row=2, columnspan=2)     
 
         self.filepath = ttk.Label(self, foreground='green')
-        self.filepath.grid(row=3, columnspan=2)        
+        self.filepath.grid(row=3, columnspan=2)   
+
+        self.log_widget = ScrolledText(self, height=25, width=120, font=("courrier", "10", "normal"))
+        self.log_widget.grid(row=9, columnspan=2)   
+
+        self.protocol("WM_DELETE_WINDOW", self.on_closing)
+
+
+
+    def redirect_logging(self):
+        logger = PrintLogger(self.log_widget)
+        sys.stdout = logger
+        sys.stderr = logger
+    
+    def on_closing(self):
+        if messagebox.askyesno(title="Quitter ?", message="Voulez-vous vraiment quitter ?"):
+            self.destroy()
         
     def browse_files(self):
         # use instance variable self.filename
@@ -345,6 +383,9 @@ class App(Tk):
         for prod in range (0,len(prod_name)-1):
             print(prod_name[prod]," : ",total_item_array[prod+1])
 
+        print("Génération du fichier client terminée :", output_filename)
+        showerror(title='Error', message=("Génération du fichier PRODUCTEURS terminée: " + output_filename))
+    
 
 
 ################################
@@ -430,8 +471,8 @@ class App(Tk):
             total = 0
             total_item = 0
 
-            print("*** Famille: ", family[fam]," ***")
-            print("*** Colonne nr: ", family_pos_col[fam]," ***")
+            print("***** Famille: ", family[fam]," *****")
+            #print("*** Colonne nr: ", family_pos_col[fam]," ***")
             wb.create_sheet(family[fam])
 
             #Remove default unused excel sheet
@@ -447,6 +488,8 @@ class App(Tk):
             ws['F1'] = 'TOTAL'
                 
             for prod in range (0,len(prod_name)-1):
+
+                print("** Producteur: ",prod_name[prod]," **")
                 
                 #Debugging lines
                 #print ("Nom du producteur: ",prod_name[prod])
@@ -459,7 +502,7 @@ class App(Tk):
 
                 current_row = ws.max_row
 
-                print("Ligne actuelle: ", prod_name[prod], current_row)
+                #print("Ligne actuelle: ", prod_name[prod], current_row)
 
                 # Highlight productor row
                 for cell in ws[current_row]:
@@ -500,9 +543,9 @@ class App(Tk):
                         if montant_total != 0:
                             total_item = total_item + 1
 
-                print("Nom du producteur: ",prod_name[prod], "Total prod: ", total_prod, "Current row: ", current_row, "Total item: ",total_item)
+                #print("Nom du producteur: ",prod_name[prod], "Total prod: ", total_prod, "Current row: ", current_row, "Total item: ",total_item)
                 if total_prod == 0:
-                    print("ligne supprimée: ",current_row)
+                    #print("ligne supprimée: ",current_row)
                     ws.delete_rows(current_row)
                     total_item = total_item - 1
 
@@ -523,7 +566,7 @@ class App(Tk):
 
             #Define printing area
             last = ws.calculate_dimension()
-            print("Print area for this sheet: ",last)
+            #print("Print area for this sheet: ",last)
             ws.print_area = last
 
 
@@ -555,9 +598,9 @@ class App(Tk):
             #copy_range(last,ws,wsglob)
 
 
-            print("position: ",position)
-            print("fam: ",fam)
-            print("total_item_array[fam]: ",total_item_array[fam])
+            #print("position: ",position)
+            #print("fam: ",fam)
+            #print("total_item_array[fam]: ",total_item_array[fam])
 
             if fam == 0:
                 position = 0
@@ -617,7 +660,8 @@ class App(Tk):
         output_filename =(path.replace(".xls", "-par famille.xls"))
         wb.save(output_filename)
 
-
+        print("Génération du fichier client terminée :", output_filename)
+        showerror(title='Error', message=("Génération du fichier CLIENTS terminée: " + output_filename))
 
 root = App()
 root.mainloop()
